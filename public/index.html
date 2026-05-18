@@ -1922,12 +1922,23 @@
       <div id="pinning-settings-container" class="provider-section">
         <!-- Pinning settings generated here -->
       </div>
-      <h3 style="margin: 0 0 0.25rem; font-size: 1rem;">Ping Filtering Exceptions</h3>
-      <p style="color: var(--text-muted); margin: 0 0 1.25rem; font-size: 0.84rem;">Exclude models from pinging and routing based on criteria.</p>
-      <div id="filter-rules-container">
-        <!-- Filter rules UI generated here -->
-      </div>
-      <h3 style="margin: 2rem 0 0.25rem; font-size: 1rem;">Providers</h3>
+       <h3 style="margin: 0 0 0.25rem; font-size: 1rem;">Ping Filtering Exceptions</h3>
+       <p style="color: var(--text-muted); margin: 0 0 1.25rem; font-size: 0.84rem;">Exclude models from pinging and routing based on criteria.</p>
+       <div id="filter-rules-container">
+         <!-- Filter rules UI generated here -->
+       </div>
+       <h3 style="margin: 2rem 0 0.25rem; font-size: 1rem;">Custom Endpoints</h3>
+       <p style="color: var(--text-muted); margin: 0 0 1.25rem; font-size: 0.84rem;">Create custom API endpoints limited to specific models you select.</p>
+       <div style="margin-bottom: 1rem;">
+         <button id="create-custom-endpoint-btn" onclick="openCreateCustomEndpointModal()" style="border: 1px solid var(--border); background: var(--input-bg); color: var(--text); cursor: pointer; padding: 8px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+           Create Custom Endpoint
+         </button>
+       </div>
+       <div id="custom-endpoints-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px;">
+         <!-- Custom endpoints listed here -->
+       </div>
+       <h3 style="margin: 2rem 0 0.25rem; font-size: 1rem;">Providers</h3>
       <p style="color: var(--text-muted); margin: 0 0 1.25rem; font-size: 0.84rem;">Configure API keys to enable models from different providers.</p>
       <div style="margin-bottom: 1rem;">
         <button id="refresh-all-btn" onclick="refreshAllProviders()" style="border: 1px solid var(--border); background: var(--input-bg); color: var(--text); cursor: pointer; padding: 8px 16px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
@@ -2134,6 +2145,34 @@
       <button onclick="closeProviderSyncModal()" style="border:none; background:var(--surface-alt); cursor:pointer; width:32px; height:32px; border-radius:999px; font-size:1.2rem; line-height:1;">&times;</button>
     </div>
     <div id="provider-sync-body" style="padding:18px 22px 22px; overflow:auto; max-height:calc(80vh - 84px);"></div>
+  </div>
+
+  <!-- Custom Endpoint Modal -->
+  <div id="custom-endpoint-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:min(600px, calc(100vw - 32px)); max-height:min(90vh, 800px); background:var(--card); border:1px solid var(--border); border-radius:18px; box-shadow:0 24px 80px rgba(15, 23, 42, 0.22); z-index:1001; overflow:hidden; flex-direction:column;">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding:20px 22px 14px; border-bottom:1px solid var(--border);">
+      <div>
+        <div id="custom-endpoint-modal-title" style="font-size:1.05rem; font-weight:700; color:var(--text);">Create Custom Endpoint</div>
+        <div id="custom-endpoint-modal-subtitle" style="font-size:0.82rem; color:var(--text-muted); margin-top:4px;">Select models to include in this endpoint</div>
+      </div>
+      <button onclick="closeCustomEndpointModal()" style="border:none; background:var(--surface-alt); cursor:pointer; width:32px; height:32px; border-radius:999px; font-size:1.2rem; line-height:1;">&times;</button>
+    </div>
+    <div style="padding:18px 22px; overflow:auto; flex:1;">
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:0.82rem; font-weight:600; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.05em;">Endpoint Name</label>
+        <input id="custom-endpoint-name" type="text" placeholder="e.g., Fast Models, Development Only" style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:var(--input-bg); color:var(--text); box-sizing:border-box; font-size:0.875rem;" />
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:0.82rem; font-weight:600; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.05em;">Select Models</label>
+        <div id="custom-endpoint-models-list" style="border:1px solid var(--border); border-radius:8px; background:var(--chat-bg); max-height:350px; overflow-y:auto;">
+          <div style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.85rem;">Loading available models...</div>
+        </div>
+      </div>
+      <div id="custom-endpoint-status" style="font-size:0.78rem; color:var(--text-muted); min-height:1em;"></div>
+    </div>
+    <div style="padding:14px 22px 18px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end;">
+      <button onclick="closeCustomEndpointModal()" style="border:1px solid var(--border); background:var(--input-bg); color:var(--text); cursor:pointer; padding:8px 16px; border-radius:8px; font-size:0.82rem; font-weight:600;">Cancel</button>
+      <button id="custom-endpoint-create-btn" onclick="submitCreateCustomEndpoint()" style="background:var(--accent); color:white; border:none; cursor:pointer; padding:8px 16px; border-radius:8px; font-size:0.82rem; font-weight:600;">Create Endpoint</button>
+    </div>
   </div>
 
   <script>
@@ -3531,6 +3570,231 @@
       );
     }
 
+    let editingCustomEndpointId = null;
+
+    // Custom Endpoints Functions
+    async function openCreateCustomEndpointModal() {
+      editingCustomEndpointId = null;
+      const overlay = document.getElementById('overlay');
+      const modal = document.getElementById('custom-endpoint-modal');
+      if (!overlay || !modal) return;
+      
+      overlay.style.display = 'block';
+      modal.style.display = 'flex';
+      document.getElementById('custom-endpoint-name').value = '';
+      document.getElementById('custom-endpoint-name').readOnly = false;
+      document.getElementById('custom-endpoint-status').textContent = '';
+      document.getElementById('custom-endpoint-modal-title').textContent = 'Create Custom Endpoint';
+      document.getElementById('custom-endpoint-modal-subtitle').textContent = 'Select models to include in this endpoint';
+      document.getElementById('custom-endpoint-create-btn').textContent = 'Create Endpoint';
+      
+      await loadCustomEndpointModels([]);
+    }
+
+    async function openEditCustomEndpointModal(ep) {
+      editingCustomEndpointId = ep.id;
+      const overlay = document.getElementById('overlay');
+      const modal = document.getElementById('custom-endpoint-modal');
+      if (!overlay || !modal) return;
+      
+      overlay.style.display = 'block';
+      modal.style.display = 'flex';
+      document.getElementById('custom-endpoint-name').value = ep.name || ep.id;
+      document.getElementById('custom-endpoint-name').readOnly = true;
+      document.getElementById('custom-endpoint-status').textContent = '';
+      document.getElementById('custom-endpoint-modal-title').textContent = 'Edit Custom Endpoint';
+      document.getElementById('custom-endpoint-modal-subtitle').textContent = `Modify models for "${escapeHtml(ep.name || ep.id)}"`;
+      document.getElementById('custom-endpoint-create-btn').textContent = 'Save Changes';
+      
+      await loadCustomEndpointModels(Array.isArray(ep.models) ? ep.models : []);
+    }
+
+    function closeCustomEndpointModal() {
+      const overlay = document.getElementById('overlay');
+      const modal = document.getElementById('custom-endpoint-modal');
+      if (overlay) overlay.style.display = 'none';
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function loadCustomEndpointModels(selectedModels = []) {
+      const container = document.getElementById('custom-endpoint-models-list');
+      if (!container) return;
+      
+      const selectedSet = new Set(selectedModels);
+      container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.85rem;">Loading available models...</div>';
+      
+      try {
+        // Fetch provider config to know which providers have API keys
+        const configRes = await fetch('/api/config');
+        const providers = await configRes.json();
+        const providersWithKeys = new Set(
+          (Array.isArray(providers) ? providers : [])
+            .filter(p => p.hasKey)
+            .map(p => p.key)
+        );
+
+        // Filter models by providers that have API keys configured
+        const availableModels = allModels
+          .filter(m => {
+            // Only show models from providers with API keys
+            return providersWithKeys.has(m.providerKey) && m.status !== 'disabled' && m.status !== 'banned';
+          })
+          .sort((a, b) => {
+            const aLabel = a.label || a.modelId || '';
+            const bLabel = b.label || b.modelId || '';
+            return aLabel.localeCompare(bLabel);
+          });
+        
+        if (availableModels.length === 0) {
+          container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted); font-size:0.85rem;">No models available with configured API keys.</div>';
+          return;
+        }
+        
+        const html = availableModels
+          .map(m => {
+            const modelKey = `${m.providerKey}/${m.modelId}`;
+            const label = `${m.label || m.modelId} (${m.providerKey})`;
+            const isUp = m.status === 'up';
+            const statusDot = isUp
+              ? `<span style="width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0;" title="Online"></span>`
+              : `<span style="width:6px;height:6px;border-radius:50%;background:var(--error);flex-shrink:0;" title="Offline"></span>`;
+            const rowOpacity = isUp ? '' : 'opacity:0.55;';
+            const isChecked = selectedSet.has(modelKey) ? ' checked' : '';
+            return `<label style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid var(--border); cursor:pointer; ${rowOpacity}" onmouseover="this.style.background='var(--surface-hover)'" onmouseout="this.style.background=''">
+              <input type="checkbox" value="${escapeHtml(modelKey)}" class="custom-endpoint-model-checkbox" style="margin:0; cursor:pointer;"${isChecked} />
+              ${statusDot}
+              <span style="font-size:0.85rem;">
+                <div style="font-weight:500;">${escapeHtml(label)}</div>
+                <div style="font-size:0.78rem; color:var(--text-muted);">${escapeHtml(m.modelId)}</div>
+              </span>
+            </label>`;
+          })
+          .join('');
+        
+        container.innerHTML = html;
+      } catch (err) {
+        container.innerHTML = `<div style="padding:20px; text-align:center; color:var(--status-error-text); font-size:0.85rem;">Error loading models: ${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    async function submitCreateCustomEndpoint() {
+      const nameInput = document.getElementById('custom-endpoint-name');
+      const statusEl = document.getElementById('custom-endpoint-status');
+      const name = (nameInput?.value || '').trim();
+      
+      if (!name) {
+        statusEl.textContent = 'Endpoint name is required.';
+        statusEl.style.color = 'var(--status-error-text)';
+        return;
+      }
+      
+      const checkboxes = document.querySelectorAll('.custom-endpoint-model-checkbox:checked');
+      if (checkboxes.length === 0) {
+        statusEl.textContent = 'Select at least one model.';
+        statusEl.style.color = 'var(--status-error-text)';
+        return;
+      }
+      
+      const models = Array.from(checkboxes).map(cb => cb.value);
+      
+      const isEdit = !!editingCustomEndpointId;
+      const id = isEdit ? editingCustomEndpointId : name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      if (!id) {
+        statusEl.textContent = 'Invalid endpoint name.';
+        statusEl.style.color = 'var(--status-error-text)';
+        return;
+      }
+      
+      statusEl.textContent = isEdit ? 'Saving changes...' : 'Creating endpoint...';
+      statusEl.style.color = 'var(--text-muted)';
+      
+      try {
+        const url = isEdit ? `/api/custom-endpoints/${encodeURIComponent(id)}` : '/api/custom-endpoints';
+        const method = isEdit ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, name, models })
+        });
+        
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || `Failed to ${isEdit ? 'update' : 'create'} custom endpoint`);
+        }
+        
+        statusEl.textContent = isEdit ? 'Endpoint updated!' : 'Endpoint created!';
+        statusEl.style.color = 'var(--status-success-text)';
+        editingCustomEndpointId = null;
+        setTimeout(() => {
+          closeCustomEndpointModal();
+          loadSettings();
+        }, 1000);
+      } catch (err) {
+        statusEl.textContent = err.message || `Failed to ${isEdit ? 'update' : 'create'} endpoint`;
+        statusEl.style.color = 'var(--status-error-text)';
+      }
+    }
+
+    async function deleteCustomEndpoint(id) {
+      if (!confirm(`Delete custom endpoint "${id}"?`)) return;
+      
+      try {
+        const res = await fetch(`/api/custom-endpoints/${encodeURIComponent(id)}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to delete endpoint');
+        }
+        loadSettings();
+      } catch (err) {
+        alert(err.message || 'Failed to delete endpoint');
+      }
+    }
+
+    function loadCustomEndpoints() {
+      const container = document.getElementById('custom-endpoints-container');
+      if (!container) return;
+      
+      fetch('/api/custom-endpoints')
+        .then(r => r.json())
+        .then(data => {
+          const endpoints = Array.isArray(data.endpoints) ? data.endpoints : [];
+          if (endpoints.length === 0) {
+            container.innerHTML = '<div style="grid-column:1/-1; padding:20px; text-align:center; color:var(--text-muted); font-size:0.85rem;">No custom endpoints created yet.</div>';
+            return;
+          }
+          
+          const html = endpoints.map(ep => {
+            const modelCount = (Array.isArray(ep.models) ? ep.models : []).length;
+            const modelList = (Array.isArray(ep.models) ? ep.models : [])
+              .slice(0, 3)
+              .map(m => escapeHtml(m.split('/')[1] || m))
+              .join(', ');
+            const moreCount = modelCount > 3 ? modelCount - 3 : 0;
+            
+            return `<div style="border:1px solid var(--border); border-radius:12px; padding:14px; background:var(--chat-bg);">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:10px;">
+                <div>
+                  <div style="font-weight:600; color:var(--text); font-size:0.9rem;">${escapeHtml(ep.name)}</div>
+                  <div style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">${modelCount} model${modelCount === 1 ? '' : 's'}</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px; flex-shrink:0;">
+                  <button onclick='openEditCustomEndpointModal(${JSON.stringify(ep).replace(/'/g, "&apos;")})' style="border:none; background:transparent; color:var(--text-muted); cursor:pointer; font-size:1.1rem; padding:4px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='var(--surface-alt)'" onmouseout="this.style.background='transparent'" title="Edit endpoint">✎</button>
+                  <button onclick="deleteCustomEndpoint('${escapeHtml(ep.id)}')" style="border:none; background:transparent; color:var(--text-muted); cursor:pointer; font-size:1.2rem; padding:4px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:6px; transition:background 0.15s;" onmouseover="this.style.background='var(--status-error-bg)';this.style.color='var(--status-error-text)'" onmouseout="this.style.background='transparent';this.style.color='var(--text-muted)'" title="Delete endpoint">×</button>
+                </div>
+              </div>
+              <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.4; max-height:60px; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(modelList)}${moreCount > 0 ? ` +${moreCount} more` : ''}</div>
+            </div>`;
+          }).join('');
+          
+          container.innerHTML = html;
+        })
+        .catch(() => {
+          container.innerHTML = '<div style="grid-column:1/-1; padding:20px; text-align:center; color:var(--status-error-text); font-size:0.85rem;">Failed to load custom endpoints</div>';
+        });
+    }
+
     async function refreshProviderModels(key, providerName) {
       if (!key || providerRefreshInFlight.has(key)) return;
       providerRefreshInFlight.add(key);
@@ -3976,6 +4240,7 @@
           `;
           container.appendChild(section);
         });
+        loadCustomEndpoints();
       } catch (err) { console.error(err); }
     }
 
@@ -4585,7 +4850,7 @@
       }
     }
 
-    function updateChatModelOptions(models = []) {
+    async function updateChatModelOptions(models = []) {
       const select = document.getElementById('chat-model-select');
       if (!select) return;
 
@@ -4600,6 +4865,16 @@
             label: `${m.label || m.modelId} · ${m.providerKey}`
           }))
       ];
+
+      // Include custom endpoints in the dropdown
+      try {
+        const ceRes = await fetch('/api/custom-endpoints');
+        const ceData = await ceRes.json();
+        const endpoints = Array.isArray(ceData.endpoints) ? ceData.endpoints : [];
+        for (const ep of endpoints) {
+          options.push({ value: ep.id, label: `${ep.name} · custom endpoint` });
+        }
+      } catch { /* ignore — custom endpoints are optional */ }
 
       const deduped = [];
       const seen = new Set();
