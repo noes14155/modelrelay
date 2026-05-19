@@ -1770,6 +1770,7 @@
 
     <div class="tabs">
       <div class="tab active" id="tab-models" onclick="switchTab('models')">Live Telemetry</div>
+      <div class="tab" id="tab-providers" onclick="switchTab('providers')">Providers Online</div>
       <div class="tab" id="tab-chat" onclick="switchTab('chat')">Chat</div>
       <div class="tab" id="tab-logs" onclick="switchTab('logs')">Request Logs</div>
       <div class="tab" id="tab-status" onclick="switchTab('status')">Account Status</div>
@@ -1902,6 +1903,23 @@
             <!-- Populated by JS -->
           </tbody>
         </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="providers-view" style="display: none;">
+      <div class="table-container">
+        <div class="table-header">
+          <div>
+            <div class="table-title">Providers Online</div>
+            <div style="margin-top:4px; color:var(--text-muted); font-size:0.84rem;">A provider is online when at least one of its models is currently up.</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button onclick="loadProviderStatus()" class="btn" style="background:var(--input-bg); color:var(--text); border:1px solid var(--border);">Refresh</button>
+          </div>
+        </div>
+        <div id="provider-status-body">
+          <div style="padding:32px; text-align:center; color:var(--text-muted);">Loading provider status...</div>
         </div>
       </div>
     </div>
@@ -2250,6 +2268,7 @@
       document.getElementById(`tab-${tab}`).classList.add('active');
 
       document.getElementById('models-view').style.display = tab === 'models' ? 'block' : 'none';
+      document.getElementById('providers-view').style.display = tab === 'providers' ? 'block' : 'none';
       document.getElementById('chat-view').style.display = tab === 'chat' ? 'block' : 'none';
       document.getElementById('logs-view').style.display = tab === 'logs' ? 'block' : 'none';
       document.getElementById('status-view').style.display = tab === 'status' ? 'block' : 'none';
@@ -2258,6 +2277,8 @@
 
       if (tab === 'settings') {
         loadSettings();
+      } else if (tab === 'providers') {
+        loadProviderStatus();
       } else if (tab === 'logs') {
         loadLogs(true);
       } else if (tab === 'chat') {
@@ -4449,7 +4470,7 @@
           return;
         }
 
-        let html = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; table-layout:auto; min-width:860px;">
+        let html = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; table-layout:auto; min-width:980px;">
           <thead>
             <tr>
               <th style="text-align:left; width:22%; min-width:180px; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Provider</th>
@@ -4457,7 +4478,8 @@
               <th style="text-align:left; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Status</th>
               <th style="text-align:right; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Requests</th>
               <th style="text-align:right; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Max Turns</th>
-              <th style="text-align:center; width:110px; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Next Key</th>
+              <th style="text-align:center; width:120px; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Active Now</th>
+              <th style="text-align:center; width:120px; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Next Up</th>
             </tr>
           </thead>
           <tbody>`;
@@ -4483,7 +4505,8 @@
               statusBg = 'var(--status-warning-bg)';
               statusText = 'Cooling';
             }
-            const isNext = acct.index === info.currentIdx;
+            const isActive = acct.index === info.activeIdx;
+            const isNext = acct.index === info.nextIdx;
             html += `<tr style="border-bottom:1px solid var(--border);">
               <td style="padding:14px 24px; font-size:0.875rem; font-weight:600; white-space:normal; word-break:break-word;">${escapeHtml(name)}</td>
               <td style="padding:14px 24px; font-size:0.875rem;">
@@ -4494,6 +4517,7 @@
               </td>
               <td style="padding:14px 24px; text-align:right; font-size:0.875rem; font-weight:600; font-variant-numeric:tabular-nums;">${acct.requests}</td>
               <td style="padding:14px 24px; text-align:right; font-size:0.875rem; color:var(--text-muted);">${maxTurns > 0 ? maxTurns : 'unlimited'}</td>
+              <td style="padding:14px 24px; text-align:center; font-size:0.78rem; font-weight:700; color:var(--text-muted);">${isActive ? '<span style="display:inline-block; padding:3px 8px; border-radius:999px; background:var(--status-success-bg); color:var(--status-success-text);">Active</span>' : ''}</td>
               <td style="padding:14px 24px; text-align:center; font-size:0.78rem; font-weight:700; color:var(--text-muted);">${isNext ? '<span style="display:inline-block; padding:3px 8px; border-radius:999px; background:var(--surface-alt); color:var(--text);">Next</span>' : ''}</td>
             </tr>`;
           }
@@ -4502,6 +4526,57 @@
         body.innerHTML = html;
       } catch (err) {
         body.innerHTML = '<div style="padding:32px; text-align:center; color:var(--error);">Failed to load account status.</div>';
+      }
+    }
+
+    async function loadProviderStatus() {
+      const body = document.getElementById('provider-status-body');
+      if (!body) return;
+      body.innerHTML = '<div style="padding:32px; text-align:center; color:var(--text-muted);">Loading provider status...</div>';
+      try {
+        const res = await fetch('/api/providers/status');
+        const payload = await res.json();
+        const providers = payload.providers || [];
+
+        if (providers.length === 0) {
+          body.innerHTML = '<div style="padding:32px; text-align:center; color:var(--text-muted);">No provider status data available yet.</div>';
+          return;
+        }
+
+        let html = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; min-width:760px;">
+          <thead>
+            <tr>
+              <th style="text-align:left; min-width:180px; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Provider</th>
+              <th style="text-align:left; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Status</th>
+              <th style="text-align:right; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Models Up</th>
+              <th style="text-align:right; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Down</th>
+              <th style="text-align:right; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">No Auth</th>
+              <th style="text-align:right; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Disabled</th>
+              <th style="text-align:right; padding:12px 24px; font-size:0.75rem; color:var(--text-muted); font-weight:600; background:var(--chat-bg);">Total</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+        for (const provider of providers) {
+          const online = provider.online === true;
+          const statusBg = online ? 'var(--status-success-bg)' : 'var(--status-error-bg)';
+          const statusColor = online ? 'var(--status-success-text)' : 'var(--status-error-text)';
+          const statusText = online ? 'Online' : 'Offline';
+          html += `<tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:14px 24px; font-size:0.875rem; font-weight:600; white-space:normal; word-break:break-word;">${escapeHtml(provider.name)}</td>
+            <td style="padding:14px 24px;"><span style="background:${statusBg}; color:${statusColor}; border-radius:999px; padding:2px 10px; font-size:0.72rem; font-weight:700;">${online ? '🟢' : '🔴'} ${statusText}</span></td>
+            <td style="padding:14px 24px; text-align:right; font-size:0.875rem; font-weight:600; font-variant-numeric:tabular-nums;">${provider.up}</td>
+            <td style="padding:14px 24px; text-align:right; font-size:0.875rem; font-variant-numeric:tabular-nums;">${provider.down}</td>
+            <td style="padding:14px 24px; text-align:right; font-size:0.875rem; font-variant-numeric:tabular-nums;">${provider.noauth}</td>
+            <td style="padding:14px 24px; text-align:right; font-size:0.875rem; font-variant-numeric:tabular-nums;">${provider.disabled}</td>
+            <td style="padding:14px 24px; text-align:right; font-size:0.875rem; color:var(--text-muted); font-variant-numeric:tabular-nums;">${provider.total}</td>
+          </tr>`;
+        }
+
+        html += '</tbody></table></div>';
+        body.innerHTML = html;
+      } catch (err) {
+        body.innerHTML = '<div style="padding:32px; text-align:center; color:var(--error);">Failed to load provider status.</div>';
       }
     }
 

@@ -27,7 +27,7 @@ import { normalizeMissingScoreId } from '../lib/score-fetcher.js'
 import { resolveAutostartExecPath, resolveAutostartNodePath } from '../lib/autostart.js'
 import { exportConfigToken, getApiKey, getApiKeyPool, getMaxTurns, getPinningMode, getProviderBaseUrl, getProviderModelId, getProviderPingIntervalMs, hasMultipleKeys, importConfigToken, normalizeConfigShape, isOpenAICompatibleInstanceKey, getBaseProviderKey, getOpenAICompatibleInstanceId, buildOpenAICompatibleInstanceKey, listOpenAICompatibleEndpoints, upsertOpenAICompatibleEndpoint, removeOpenAICompatibleEndpoint } from '../lib/config.js'
 import { buildNpmInstallInvocation, buildWindowsPostUpdateRestartCommand, getForcedUpdateVersion, getLocalUpdateTarballPath, getLocalUpdateVersion, isRunningFromSource, shouldStopAutostartBeforeUpdate } from '../lib/update.js'
-import { buildKiroRequestPayload, buildKiroSocialLoginUrl, buildOpencodeHeaders, buildOpencodeProjectId, buildProviderRequestBody, buildProviderRequestHeaders, exchangeKiroSocialAuthFlow, exchangeKiroSocialCode, extractKiroEmailFromAccessToken, extractOllamaModelRecords, extractOpenAICompatibleModelRecords, buildOpenAICompatibleModelsListUrl, getAccountStatus, getKiroRefreshToken, hasKiroAuthConfigured, getPinnedModelCandidate, getPinnedModelMatches, isProviderAuthOptional, isProviderBearerAuthEnabled, parseKiroEventFrame, pollKiroBuilderIdToken, providerWantsBearerAuth, resolveKiroOAuthAccessToken, shouldRetryOptionalProviderWithBearer, startKiroBuilderIdDeviceAuth, startKiroSocialAuthFlow, toOllamaModelMeta, toOpenAICompatibleDiscoveredModelMeta, toOpenCodeModelMeta, toOpenRouterModelMeta, toKiloCodeModelMeta, transformKiroResponse } from '../lib/server.js'
+import { buildKiroRequestPayload, buildKiroSocialLoginUrl, buildOpencodeHeaders, buildOpencodeProjectId, buildProviderRequestBody, buildProviderRequestHeaders, exchangeKiroSocialAuthFlow, exchangeKiroSocialCode, extractKiroEmailFromAccessToken, extractOllamaModelRecords, extractOpenAICompatibleModelRecords, buildOpenAICompatibleModelsListUrl, getAccountStatus, getKiroRefreshToken, getProviderStatusSnapshot, hasKiroAuthConfigured, getPinnedModelCandidate, getPinnedModelMatches, isProviderAuthOptional, isProviderBearerAuthEnabled, parseKiroEventFrame, pollKiroBuilderIdToken, providerWantsBearerAuth, resolveKiroOAuthAccessToken, shouldRetryOptionalProviderWithBearer, startKiroBuilderIdDeviceAuth, startKiroSocialAuthFlow, toOllamaModelMeta, toOpenAICompatibleDiscoveredModelMeta, toOpenCodeModelMeta, toOpenRouterModelMeta, toKiloCodeModelMeta, transformKiroResponse } from '../lib/server.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
 
@@ -2027,7 +2027,8 @@ describe('multi-account round-robin', () => {
         providers: {
           kilocode: {
             keyCount: 2,
-            currentIdx: 0,
+            activeIdx: null,
+            nextIdx: 0,
             maxTurns: 3,
             accounts: [
               { index: 0, masked: 'k1***', requests: 0, rateLimited: false },
@@ -2035,6 +2036,24 @@ describe('multi-account round-robin', () => {
             ],
           },
         },
+      })
+    })
+  })
+
+  describe('getProviderStatusSnapshot', () => {
+    it('aggregates model states into provider online status', () => {
+      const snapshot = getProviderStatusSnapshot([
+        { providerKey: 'nvidia', status: 'up' },
+        { providerKey: 'nvidia', status: 'down' },
+        { providerKey: 'groq', status: 'noauth' },
+        { providerKey: 'groq', status: 'disabled' },
+      ], { providers: {} })
+
+      assert.deepEqual(snapshot, {
+        providers: [
+          { key: 'nvidia', name: 'NIM', total: 2, up: 1, down: 1, noauth: 0, disabled: 0, excluded: 0, online: true },
+          { key: 'groq', name: 'Groq', total: 2, up: 0, down: 0, noauth: 1, disabled: 1, excluded: 0, online: false },
+        ],
       })
     })
   })
@@ -2073,9 +2092,26 @@ describe('multi-account round-robin', () => {
       const selected = selectNextApiKeyFromPool(pool, entry, 2, now, 60_000)
 
       assert.equal(selected, 'key1')
+      assert.equal(entry.lastUsedIdx, 0)
       assert.equal(entry.currentIdx, 1)
       assert.equal(entry.accounts.get(0).requests, 1)
       assert.equal(entry.accounts.get(1).requests, 0)
+    })
+
+    it('tracks the last selected key as active', () => {
+      const now = 1_000_000
+      const pool = ['key1', 'key2']
+      const entry = {
+        currentIdx: 1,
+        lastUsedIdx: null,
+        accounts: new Map(),
+      }
+
+      const selected = selectNextApiKeyFromPool(pool, entry, 0, now, 60_000)
+
+      assert.equal(selected, 'key2')
+      assert.equal(entry.lastUsedIdx, 1)
+      assert.equal(entry.currentIdx, 0)
     })
   })
 })
