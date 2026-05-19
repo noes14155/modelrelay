@@ -2018,9 +2018,24 @@ describe('multi-account round-robin', () => {
   })
 
   describe('getAccountStatus', () => {
-    it('returns empty when pool state is not initialized', () => {
-      const result = getAccountStatus({ apiKeys: { kilocode: ['k1', 'k2'] } })
-      assert.deepEqual(result, { providers: {} })
+    it('returns configured multi-key providers even before pool state is initialized', () => {
+      const result = getAccountStatus({
+        apiKeys: { kilocode: ['k1', 'k2'], nvidia: 'nv-key' },
+        providers: { kilocode: { maxTurns: 3 } },
+      })
+      assert.deepEqual(result, {
+        providers: {
+          kilocode: {
+            keyCount: 2,
+            currentIdx: 0,
+            maxTurns: 3,
+            accounts: [
+              { index: 0, masked: 'k1***', requests: 0, rateLimited: false },
+              { index: 1, masked: 'k2***', requests: 0, rateLimited: false },
+            ],
+          },
+        },
+      })
     })
   })
 
